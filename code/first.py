@@ -45,3 +45,25 @@ ds = ds.prefetch(buffer_size=AUTOTUNE)
 ds = image_label_ds.apply(tf.data.experimental.shuffle_and_repeat(buffer_size=image_count))
 ds = ds.batch(BATCH_SIZE)
 ds = ds.prefetch(buffer_size=AUTOTUNE)
+
+mobile_net = tf.keras.applications.MobileNetV2(input_shape=(192,192,3))
+mobile_net.trainable = False
+
+def change_range(image, label):
+    return 2*image-1, label
+
+keras_ds = ds.map(change_range)
+image_batch, label_batch = next(iter(keras_ds))
+
+feature_map_batch = mobile_net(image_batch)
+print(feature_map_batch.shape)
+
+model = tf.keras.Sequential([
+    mobile_net,
+    tf.keras.layers.GlobalAveragePooling2D(),
+    tf.keras.layers.Dense(4)
+])
+
+logit_batch = model(image_batch).numpy()
+
+print("min logit:" , logit_batch.min())
