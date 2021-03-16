@@ -46,7 +46,7 @@ ds = image_label_ds.apply(tf.data.experimental.shuffle_and_repeat(buffer_size=im
 ds = ds.batch(BATCH_SIZE)
 ds = ds.prefetch(buffer_size=AUTOTUNE)
 
-mobile_net = tf.keras.applications.MobileNetV2(input_shape=(192,192,3))
+mobile_net = tf.keras.applications.MobileNetV2(input_shape=(192,192,3), include_top=False)
 mobile_net.trainable = False
 
 def change_range(image, label):
@@ -66,4 +66,62 @@ model = tf.keras.Sequential([
 
 logit_batch = model(image_batch).numpy()
 
-print("min logit:" , logit_batch.min())
+print("min logit:", logit_batch.min())
+print("max Ligit:", logit_batch.max())
+print()
+
+print("Shape:", logit_batch.shape)
+
+model.compile(optimizer=tf.keras.optimizers.Adam(),
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+steps_per_epoch = tf.math.ceil(len(all_image_paths)/BATCH_SIZE).numpy()
+steps_per_epoch
+
+import time
+
+default_timeit_steps = 2*steps_per_epoch+1
+
+def timeit(ds, steps=default_timeit_steps):
+    overall_start = time.time()
+    it = iter(ds.take(steps+1))
+    next(it)
+
+    start = time.time()
+    for i,(images, labels) in enumerate(it):
+        if i%10 == 0:
+            print('.', end=' ')
+    print()
+    end = time.time()
+    duration = end - start
+
+    print("{} batches: {} s".format(steps, duration))
+    print("{:0.5f} Images/s".format(BATCH_SIZE*steps/duration))
+    print("Total time: {}s".format(end-overall_start))
+
+
+ds = image_label_ds.apply(
+    tf.data.experimental.shuffle_and_repeat(buffer_size=image_count))
+
+ds = ds.batch(BATCH_SIZE).prefetch(buffer_size=AUTOTUNE)
+ds
+
+timeit(ds)
+
+ds = image_label_ds.cache()
+ds = ds.apply(
+    tf.data.experimental.shuffle_and_repeat(buffer_size=image_count))
+
+ds = ds.batch(BATCH_SIZE).prefetch(buffer_size=AUTOTUNE)
+
+
+timeit(ds)
+
+ds = image_label_ds.cache(filename='./cache.tf-data')
+ds = ds.apply(
+    tf.data.experimental.shuffle_and_repeat(buffer_size=image_count))
+ds = ds.batch(BATCH_SIZE).prefetch(1)
+ds
+
+timeit(ds)
