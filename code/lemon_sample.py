@@ -53,4 +53,14 @@ for fold, (train_index, test_index) in enumerate(kf.split(train_df, train_df['cl
     train_df.loc[test_index, 'fold'] = fold
 
 
+N_CLASSES = 4
+
+class LemonTrainDataset(Dataset):
+    def __init__(self, df, transform=None):
+        self.df = df
+        self.labels = df['class_num']
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.df)
     
