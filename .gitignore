@@ -16,8 +16,7 @@ __MACOSX
 data/*
 *.pkl
 
-.idea/
-
+data/*
 MANIFEST
 build
 dist
